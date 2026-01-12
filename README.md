@@ -6,18 +6,49 @@ https://github.com/unix3dgforce/lpunpack
 
 # lpunpack
 
-##### lpunpack.py - command-line tool for extracting partition images from super
+##### lpunpack.py - command-line tool for extracting partition images from super images
 
-    	usage: lpunpack.py [-h] [-p NAME] [-S NUM] SUPER_IMAGE OUTPUT_DIR
+Usage:
+    lpunpack.py [-h] [-p NAME] [-S NUM] [--type] [--unsparse] SUPER_IMAGE OUTPUT_DIR
 
-##### positional arguments:  
-    	SUPER_IMAGE  
-    	OUTPUT_DIR  
+##### Positional arguments:
+    SUPER_IMAGE  
+        Path to the super image file.
 
-##### optional arguments:  
-    	-h, --help show this help message and exit  
-    	-p NAME, --partition NAME Extract the named partition. This can be specified multiple times or through the delimiter ["," ":"]  
-    	-S NUM, --slot NUM !!! No implementation yet !!! Slot number (default is 0).  
-    	--info, --no-info Displays pretty-printed partition metadata (default: False)
-    	-f {text,json}, --format {text,json}  Choice the format for printing info
-No implemetation extract A and B slot index
+    OUTPUT_DIR  
+        Output directory for extracted partitions.
+
+##### Optional arguments:
+    -h, --help  
+        Show this help message and exit.
+
+    -p NAME, --partition NAME  
+        Extract the named partition. Can be specified multiple times or using delimiters ["," ":"].
+
+    -S NUM, --slot NUM  
+        Slot number (default is 0).  
+        !!! No implementation yet !!!
+
+    --info, --no-info  
+        Display pretty-printed partition metadata (default: False).
+
+    -f {text,json}, --format {text,json}  
+        Choose output format for info display.
+
+##### Notes:
+- Extracting A/B slot index is not implemented yet.
+
+---
+
+## Tips
+
+### Check super image type
+To quickly detect the super image type without extracting:
+lpunpack super.img --type
+
+### Convert super image to unsparse format
+To unsparse the super image before extraction:
+lpunpack super.img out --unsparse
+
+This is useful if the super image is sparse and you want a raw image layout before processing.
+
