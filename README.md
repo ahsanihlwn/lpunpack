@@ -8,7 +8,7 @@ https://github.com/unix3dgforce/lpunpack
 
 ##### lpunpack.py - command-line tool for extracting partition images from super images
 
-Usage:
+    Usage:
     lpunpack.py [-h] [-p NAME] [-S NUM] [--type] [--unsparse] SUPER_IMAGE OUTPUT_DIR
 
 ##### Positional arguments:
