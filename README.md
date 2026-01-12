@@ -43,12 +43,12 @@ Usage:
 ## Tips
 
 ### Check super image type
-To quickly detect the super image type without extracting:
-lpunpack super.img --type
+    To quickly detect the super image type without extracting:
+    lpunpack SUPER_IMAGE --type
 
 ### Convert super image to unsparse format
-To unsparse the super image before extraction:
-lpunpack super.img out --unsparse
+    To unsparse the super image before extraction:
+    lpunpack SUPER_IMAGE OUT_DIR --unsparse
 
 This is useful if the super image is sparse and you want a raw image layout before processing.
 
