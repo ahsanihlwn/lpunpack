@@ -1,3 +1,9 @@
+This project is a fork of lpunpack by unix3dgforce.
+Modified by ahsanihlwn.
+
+Original project:
+https://github.com/unix3dgforce/lpunpack
+
 # lpunpack
 
 ##### lpunpack.py - command-line tool for extracting partition images from super
