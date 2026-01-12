@@ -627,14 +627,15 @@ class SparseImage:
 
         return self._fd.read(chunk_data_size)
 
-    def unsparse(self):
+    def unsparse(self, out_dir: Path | None = None):
         if not self.header:
             self._fd.seek(0)
             self.header = SparseHeader(self._fd.read(SPARSE_HEADER_SIZE))
         chunks = self.header.total_chunks
         self._fd.seek(self.header.file_hdr_sz - SPARSE_HEADER_SIZE, 1)
-        unsparse_file_dir = Path(self._fd.name).parent
-        unsparse_file = Path(unsparse_file_dir / "{}.unsparse.img".format(Path(self._fd.name).stem))
+        unsparse_file_dir = out_dir if out_dir else Path(self._fd.name).parent
+        unsparse_file_dir.mkdir(parents=True, exist_ok=True)
+        unsparse_file = unsparse_file_dir / f"{Path(self._fd.name).stem}.unsparse.img"
         with open(str(unsparse_file), 'wb') as out:
             sector_base = 82528
             output_len = 0
@@ -673,6 +674,24 @@ class SparseImage:
                 chunks -= 1
         return unsparse_file
 
+def detect_image_type(path: Path) -> str:
+    try:
+        with open(path, 'rb') as f:
+            # 1. sparse check
+            magic = struct.unpack('<I', f.read(4))[0]
+            if magic == SPARSE_HEADER_MAGIC:
+                return "sparse"
+
+            # 2. super (logical partition) check
+            f.seek(LP_PARTITION_RESERVED_BYTES)
+            geo_magic = struct.unpack('<I', f.read(4))[0]
+            if geo_magic == LP_METADATA_GEOMETRY_MAGIC:
+                return "super"
+
+    except Exception:
+        pass
+
+    return "unknown"
 
 T = TypeVar('T')
 
@@ -683,6 +702,7 @@ class LpUnpack(object):
         self._show_info = kwargs.get('SHOW_INFO', False)
         self._show_info_format = kwargs.get('SHOW_INFO_FORMAT', FormatType.TEXT)
         self._slot_num = None
+        self._unsparse_only = kwargs.get('UNSPARSE_ONLY', False)
         self._fd: BinaryIO = open(kwargs.get('SUPER_IMAGE'), 'rb')
         self._out_dir = kwargs.get('OUTPUT_DIR', None)
 
@@ -827,10 +847,16 @@ class LpUnpack(object):
             if SparseImage(self._fd).check():
                 print('Sparse image detected.')
                 print('Process conversion to non sparse image ....', end='', flush=True)
-                unsparse_file = SparseImage(self._fd).unsparse()
+                out_dir = self._out_dir if self._unsparse_only else None
+                unsparse_file = SparseImage(self._fd).unsparse(out_dir)
+
                 self._fd.close()
-                self._fd = open(str(unsparse_file), 'rb')
                 print('[ok]')
+                if self._unsparse_only:
+                    print(f'Raw image written to: {unsparse_file}')
+                    return
+
+                self._fd = open(str(unsparse_file), 'rb')
 
             self._fd.seek(0)
             metadata = self._read_metadata()
@@ -890,6 +916,18 @@ def create_parser():
         type=int,
         help=' !!! No implementation yet !!! Slot number (default is 0).'
     )
+    _parser.add_argument(
+        '--unsparse',
+        dest='UNSPARSE_ONLY',
+        action='store_true',
+        help='Only convert sparse image to raw (*.unsparse.img) and exit'
+    )
+    _parser.add_argument(
+        '--type',
+        dest='SHOW_TYPE',
+        action='store_true',
+        help='Detect image type: super, sparse, or unknown'
+    )
 
     if sys.version_info >= (3, 9):
         _parser.add_argument(
@@ -934,15 +972,17 @@ def create_parser():
 def main():
     parser = create_parser()
     namespace = parser.parse_args()
-    if len(sys.argv) >= 2:
-        if not Path(namespace.SUPER_IMAGE).exists():
-            parser.print_help()
-            sys.exit(2)
-        LpUnpack(**vars(namespace)).unpack()
-    else:
-        parser.print_usage()
-        sys.exit(1)
 
+    img = Path(namespace.SUPER_IMAGE)
+    if not img.exists():
+        parser.print_help()
+        sys.exit(2)
+
+    if getattr(namespace, 'SHOW_TYPE', False):
+        print(detect_image_type(img))
+        sys.exit(0)
+
+    LpUnpack(**vars(namespace)).unpack()
 
 if __name__ == '__main__':
     main()
