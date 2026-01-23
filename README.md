@@ -45,7 +45,9 @@ https://github.com/unix3dgforce/lpunpack
 ### Check super image type
     To quickly detect the super image type without extracting:
     lpunpack SUPER_IMAGE --type
-
+### lpunpack SUPER_IMAGE OUT_DIR --norm
+    This is useful when only one logical slot is needed and duplicate
+    slot outputs should be avoided.
 ### Convert super image to unsparse format
     To unsparse the super image before extraction:
     lpunpack SUPER_IMAGE OUT_DIR --unsparse
