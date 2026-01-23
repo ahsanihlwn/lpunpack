@@ -698,6 +698,7 @@ T = TypeVar('T')
 
 class LpUnpack(object):
     def __init__(self, **kwargs):
+        self._normalize_slot = kwargs.get('NORMALIZE_SLOT', False)
         self._partition_name = kwargs.get('NAME')
         self._show_info = kwargs.get('SHOW_INFO', False)
         self._show_info_format = kwargs.get('SHOW_INFO_FORMAT', FormatType.TEXT)
@@ -705,6 +706,11 @@ class LpUnpack(object):
         self._unsparse_only = kwargs.get('UNSPARSE_ONLY', False)
         self._fd: BinaryIO = open(kwargs.get('SUPER_IMAGE'), 'rb')
         self._out_dir = kwargs.get('OUTPUT_DIR', None)
+
+    def _norm_name(self, name: str) -> str:
+        if not self._normalize_slot:
+            return name
+        return re.sub(r'_[ab]$', '', name)
 
     def _check_out_dir_exists(self):
         if self._out_dir is None:
@@ -716,7 +722,8 @@ class LpUnpack(object):
     def _extract_partition(self, unpack_job: UnpackJob):
         self._check_out_dir_exists()
         print(f'Extracting partition [{unpack_job.name}] ....', end='', flush=True)
-        out_file = self._out_dir / f'{unpack_job.name}.img'
+        out_name = self._norm_name(unpack_job.name)
+        out_file = self._out_dir / f'{out_name}.img'
         with open(str(out_file), 'wb') as out:
             for part in unpack_job.parts:
                 offset, size = part
@@ -887,8 +894,17 @@ class LpUnpack(object):
                 raise LpUnpackError(message=f'Not specified directory for extraction')
 
             if self._out_dir:
+                seen = set()
+
                 for partition in metadata.partitions:
+                    out_name = self._norm_name(partition.name)
+
+                    if out_name in seen:
+                        continue
+
+                    seen.add(out_name)
                     self._extract(partition, metadata)
+
 
         except LpUnpackError as e:
             print(e.message)
@@ -928,6 +944,13 @@ def create_parser():
         action='store_true',
         help='Detect image type: super, sparse, or unknown'
     )
+    _parser.add_argument(
+        '--norm',
+        dest='NORMALIZE_SLOT',
+        action='store_true',
+        help='Normalize slot-suffixed partition names (system_a -> system)'
+    )
+
 
     if sys.version_info >= (3, 9):
         _parser.add_argument(
